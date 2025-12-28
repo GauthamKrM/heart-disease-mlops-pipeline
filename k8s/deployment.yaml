@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heart-disease-api
+  labels:
+    app: heart-disease-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: heart-disease-api
+  template:
+    metadata:
+      labels:
+        app: heart-disease-api
+    spec:
+      containers:
+      - name: api
+        image: docker.io/${{ secrets.DOCKER_USERNAME }}/heart-disease-api:latest  # Takes from Github Secrets in CI/CD, or replace manually
+        # Note: In a real manifest, you'd use a specific tag. For the assignment, we'll placeholder it.
+        # User should replace with their actual image name if running manually. 
+        # i.e. image: my-docker-user/heart-disease-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/app/models/model"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
