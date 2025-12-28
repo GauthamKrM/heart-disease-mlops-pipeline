@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: docker.io/${{ secrets.DOCKER_USERNAME }}/heart-disease-api:latest  # Takes from Github Secrets in CI/CD, or replace manually
+        image: docker.io/gauthamkrm/heart-disease-api:latest  # Takes from Github Secrets in CI/CD, or replace manually
         # Note: In a real manifest, you'd use a specific tag. For the assignment, we'll placeholder it.
         # User should replace with their actual image name if running manually. 
         # i.e. image: my-docker-user/heart-disease-api:latest
