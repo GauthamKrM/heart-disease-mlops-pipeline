@@ -1,37 +1,43 @@
+import os
 import pandas as pd
+import mlflow.sklearn
+import uvicorn
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from prometheus_fastapi_instrumentator import Instrumentator
-import uvicorn
-import mlflow.sklearn
 from contextlib import asynccontextmanager
-import os
 
-# Load model (global variable)
-# In production, we might load this from a remote MLflow registry or S3 bucket.
-# For this assignmet, we assume the model artifact is available locally or packaged in the image.
-# We will look for the latest run in the default experiment if local, or a specific path.
+
 model = None
+
+
+def load_model():
+    model_path = os.getenv("MODEL_PATH", "models/model")
+
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model path not found: {model_path}")
+
+    return mlflow.sklearn.load_model(model_path)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model
     try:
-        model_path = os.getenv("MODEL_PATH", "models/model")
-
-        if os.path.exists(model_path):
-            print(f"Loading model from {model_path}...")
-            model = mlflow.sklearn.load_model(model_path)
-        else:
-            print(f"Model path {model_path} not found. Attempting to load from latest mlruns...")
-            pass
+        model = load_model()
+        print("Model loaded successfully.")
     except Exception as e:
-        print(f"Error loading model: {e}")
+        print(f"Model loading failed: {e}")
+        model = None
     yield
 
-app = FastAPI(title="Heart Disease Prediction API", lifespan=lifespan)
 
-# Instrument Prometheus metrics
+app = FastAPI(
+    title="Heart Disease Prediction API",
+    lifespan=lifespan
+)
+
 Instrumentator().instrument(app).expose(app)
 
 
@@ -50,9 +56,11 @@ class HeartData(BaseModel):
     ca: float
     thal: float
 
+
 class PredictionResponse(BaseModel):
     prediction: int
     confidence: float
+
 
 @app.get("/health")
 def health_check():
@@ -60,26 +68,32 @@ def health_check():
         return {"status": "unhealthy", "reason": "Model not loaded"}
     return {"status": "healthy"}
 
+
 @app.post("/predict", response_model=PredictionResponse)
 def predict(data: HeartData):
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     try:
         input_df = pd.DataFrame([data.model_dump()])
-        prediction = model.predict(input_df)
-        # Some models return probability too, but pyfunc usually returns just predict. 
-        # If the underlying model supports predict_proba, accessing it via pyfunc is tricky 
-        # without unwrapping. We will stick to class prediction for the basic assignment.
-        probabilities = model.predict_proba(input_df)
-        # Determine the confidence
-        confidence = float(max(probabilities[0]))
+
+        prediction = model.predict(input_df)[0]
+
+        # Safe probability handling
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(input_df)
+            confidence = float(max(probabilities[0]))
+        else:
+            confidence = 1.0  # fallback for models without probability
+
         return {
-            "prediction": int(prediction[0]),
+            "prediction": int(prediction),
             "confidence": confidence
         }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
