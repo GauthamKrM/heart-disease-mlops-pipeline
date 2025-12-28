@@ -1,4 +1,7 @@
 import argparse
+import shutil
+import os
+import tempfile
 import pandas as pd
 import mlflow
 import mlflow.sklearn
@@ -47,7 +50,7 @@ def main(args):
     # Set experiment
     mlflow.set_experiment("heart_disease_prediction")
     
-    with mlflow.start_run():
+    with mlflow.start_run() as run:
         # Define Pipeline
         if args.model_type == 'rf':
             clf = RandomForestClassifier(n_estimators=args.n_estimators, max_depth=args.max_depth, random_state=42)
@@ -81,12 +84,23 @@ def main(args):
         mlflow.log_metrics(metrics)
         
         # Log artifacts
-        plot_confusion_matrix(y_test, y_pred, "confusion_matrix.png")
-        mlflow.log_artifact("confusion_matrix.png")
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cm_path = os.path.join(tmp_dir, "confusion_matrix.png")
+            plot_confusion_matrix(y_test, y_pred, cm_path)
+            mlflow.log_artifact(cm_path)
+            print("Confusion Matrix logged.")
         
         # Log model
         mlflow.sklearn.log_model(pipeline, "model")
-        print("Run complete.")
+        
+        local_model_path = "models/model"
+        if os.path.exists(local_model_path):
+            shutil.rmtree(local_model_path)
+        
+        run_id = run.info.run_id
+        print(f"Exporting model from run {run_id} to {local_model_path}...")
+        mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path="model", dst_path="models")
+        print("Run complete. Model exported.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
