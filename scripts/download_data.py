@@ -51,7 +51,7 @@ def process_data():
         
         # 2. The target variable in Cleveland data is 0, 1, 2, 3, 4. 
         #    0 = no disease, >0 = disease. We need a binary classifier.
-        df_clean['target'] = df_clean['target'].apply(lambda x: 1 if x > 0 else 0)
+        df_clean.loc[:, 'target'] = df_clean['target'].apply(lambda x: 1 if x > 0 else 0)
         
         print(f"Cleaned shape: {df_clean.shape}")
         print("Class distribution:")
