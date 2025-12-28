@@ -12,10 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.9
+    - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
-        python-version: 3.9
+        python-version: 3.12
 
     - name: Install dependencies
       run: |
@@ -60,13 +60,6 @@ jobs:
         pip install -r requirements.txt
         python scripts/download_data.py
         python src/train.py
-        # Copy to expected location
-        # Identify the latest run - this is tricky in CI actions without a proper script.
-        # We will assume train.py prints or we use a deterministic path or just rely on 'mlruns' being copied if we copy 'mlruns'.
-        # But our Dockerfile expects 'models/model'.
-        # Let's adjust train.py or use a helper to move it.
-        # For the assignment, let's just create a quick python snippet to find latest run and move it.
-        python -c "import mlflow; import shutil; import os; run = mlflow.last_active_run(); src=os.path.join(run.info.artifact_uri.replace('file://', ''), 'model'); dst='models/model'; os.makedirs('models', exist_ok=True); shutil.copytree(src, dst, dirs_exist_ok=True)"
 
     - name: Login to Docker Hub
       uses: docker/login-action@v2
