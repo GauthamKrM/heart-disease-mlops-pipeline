@@ -6,6 +6,7 @@ import pandas as pd
 import mlflow
 import mlflow.sklearn
 
+# -------------------- Scikit-learn imports --------------------
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -14,15 +15,22 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, confusion_matrix
 
+# -------------------- Visualization imports --------------------
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
 def load_data(path):
+    """
+    Load dataset from the specified CSV file path.
+    """
     return pd.read_csv(path)
 
 
 def evaluate(y_true, y_pred, y_pred_proba):
+    """
+    Compute evaluation metrics on test data.
+    """
     return {
         "accuracy": accuracy_score(y_true, y_pred),
         "precision": precision_score(y_true, y_pred),
@@ -32,8 +40,11 @@ def evaluate(y_true, y_pred, y_pred_proba):
 
 
 def cross_validate_model(pipeline, X, y):
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
+    #Perform stratified k-fold cross-validation to evaluate model robustness.
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    
+    # Metrics to evaluate during cross-validation
     scoring = {
         "accuracy": "accuracy",
         "precision": "precision",
@@ -50,6 +61,7 @@ def cross_validate_model(pipeline, X, y):
         return_train_score=False
     )
 
+    # Return mean cross-validation metrics
     return {
         "cv_accuracy": cv_results["test_accuracy"].mean(),
         "cv_precision": cv_results["test_precision"].mean(),
@@ -57,7 +69,7 @@ def cross_validate_model(pipeline, X, y):
         "cv_roc_auc": cv_results["test_roc_auc"].mean()
     }
 
-
+# Generate and save a confusion matrix heatmap.
 def plot_confusion_matrix(y_true, y_pred, filename="confusion_matrix.png"):
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 4))
@@ -74,13 +86,16 @@ def main(args):
     print("Loading data...")
     df = load_data(args.data_path)
 
+    # Separate features and target
     X = df.drop("target", axis=1)
     y = df["target"]
 
+    # Train-test split with stratification to preserve class distribution
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # Set MLflow experiment for tracking runs
     mlflow.set_experiment("heart_disease_prediction")
 
     with mlflow.start_run() as run:
@@ -100,7 +115,8 @@ def main(args):
             )
         else:
             clf = LogisticRegression(random_state=42, max_iter=1000)
-
+        
+        # Build preprocessing + model pipeline
         pipeline = Pipeline([
             ("imputer", SimpleImputer(strategy="mean")),
             ("scaler", StandardScaler()),
@@ -154,6 +170,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+
+    # Argument parsing for flexible experiment configuration
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", default="data/processed/heart_disease_cleaned.csv")
     parser.add_argument("--model_type", default="rf", choices=["rf", "lr"])
