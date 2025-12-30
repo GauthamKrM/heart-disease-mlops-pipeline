@@ -31,19 +31,14 @@ jobs:
         flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Run Model Training Smoke Test
-      # We check if training code runs without error.
-      # In a real scenario, we might use a small subset of data committed to repo or mock data.
-      # For this assignment, we will run the data download and train script.
       run: |
         python scripts/download_data.py
         python src/train.py --n_estimators 10
 
     - name: Run Unit Tests
-      # If we had tests in tests/, we would run them here.
-      # Creating a dummy test command.
       run: |
-        # pytest tests/
-        echo "Tests passed (simulated)"
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m pytest tests/
 
   docker-build-push:
     needs: build-and-test
