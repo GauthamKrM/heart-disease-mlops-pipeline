@@ -51,7 +51,7 @@ def process_data():
         df_clean = df.dropna()
         
         # 2. The target variable in Cleveland data is 0, 1, 2, 3, 4. 
-        #    0 = no disease, >0 = disease. We need a binary classifier.
+        # 0 = no disease, >0 = disease. We need a binary classifier.
         df_clean.loc[:, 'target'] = df_clean['target'].apply(lambda x: 1 if x > 0 else 0)
         
         print(f"Cleaned shape: {df_clean.shape}")
@@ -69,6 +69,6 @@ def process_data():
         print(f"Error processing data: {e}")
 
 if __name__ == "__main__":
-     # Download data first; process only if download is successful
+    # Download data first; process only if download is successful
     if download_data():
         process_data()
