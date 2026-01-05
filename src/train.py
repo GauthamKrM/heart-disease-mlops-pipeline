@@ -40,7 +40,6 @@ def evaluate(y_true, y_pred, y_pred_proba):
 
 
 def cross_validate_model(pipeline, X, y):
-
     #Perform stratified k-fold cross-validation to evaluate model robustness.
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
