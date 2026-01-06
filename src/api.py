@@ -14,6 +14,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from contextlib import asynccontextmanager
 
 # Global variable to store the loaded ML model
+# NOTE: The model is loaded once at startup and kept as a global reference to avoid
+# repeated disk I/O and deserialization overhead on every prediction request.
 model = None
 
 

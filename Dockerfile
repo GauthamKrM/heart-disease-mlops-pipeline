@@ -20,10 +20,7 @@ ENV PATH=/root/.local/bin:$PATH
 # Copy application code
 COPY src/ src/
 COPY scripts/ scripts/
-# We will copy the model at build time or runtime. 
-# For CI/CD, we usually build the image AFTER training and include the model.
-# Or we mount a volume. For this assignment's "container build" requirement, 
-# we'll assume we duplicate the 'models' directory into the container.
+# We will copy the model at build time or runtime
 COPY models/ models/
 
 # Expose port
